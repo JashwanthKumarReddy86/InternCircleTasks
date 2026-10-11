@@ -1,0 +1,132 @@
+
+import requests
+
+API_KEY = "PASTE_YOUR_API_KEY_HERE"
+
+CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+
+
+# Get current weather
+def get_current_weather(city):
+    params = {
+        "q": city,
+        "appid": API_KEY,
+        "units": "metric"
+    }
+
+    try:
+        response = requests.get(
+            CURRENT_URL, params=params, timeout=15
+        )
+        response.raise_for_status()
+        weather = response.json()
+
+        print("\n===== CURRENT WEATHER =====")
+        print("City:", weather["name"])
+        print("Temperature:", weather["main"]["temp"], "°C")
+        print("Feels Like:", weather["main"]["feels_like"], "°C")
+        print("Humidity:", weather["main"]["humidity"], "%")
+        print("Weather:", weather["weather"][0]["description"].title())
+        print("Wind Speed:", weather["wind"]["speed"], "m/s")
+
+    except requests.exceptions.HTTPError:
+        if response.status_code == 401:
+            print("Invalid API key or the key is not activated yet.")
+        elif response.status_code == 404:
+            print("City not found. Please check the spelling.")
+        else:
+            print("Weather API error:", response.status_code)
+
+    except requests.exceptions.RequestException as error:
+        print("Network error:", error)
+
+    except (KeyError, ValueError):
+        print("Unable to read the weather data.")
+
+
+# Get 5-day forecast
+def get_forecast(city):
+    params = {
+        "q": city,
+        "appid": API_KEY,
+        "units": "metric"
+    }
+
+    try:
+        response = requests.get(
+            FORECAST_URL, params=params, timeout=15
+        )
+        response.raise_for_status()
+        forecast_data = response.json()
+
+        print("\n===== WEATHER FORECAST =====")
+
+        # API provides forecasts at 3-hour intervals.
+        # Display one forecast entry per day.
+        shown_dates = set()
+
+        for item in forecast_data["list"]:
+            date_time = item["dt_txt"]
+            forecast_date = date_time.split()[0]
+
+            if forecast_date not in shown_dates:
+                shown_dates.add(forecast_date)
+
+                temperature = item["main"]["temp"]
+                description = item["weather"][0]["description"].title()
+
+                print("\nDate:", forecast_date)
+                print("Time:", date_time.split()[1])
+                print("Temperature:", temperature, "°C")
+                print("Condition:", description)
+
+                if len(shown_dates) == 5:
+                    break
+
+    except requests.exceptions.HTTPError:
+        print("Unable to fetch forecast. Check your city and API key.")
+
+    except requests.exceptions.RequestException as error:
+        print("Network error:", error)
+
+    except (KeyError, ValueError):
+        print("Unable to read forecast data.")
+
+
+# Main menu
+while True:
+    print("\n===== LIVE WEATHER APP =====")
+    print("1. Current Weather")
+    print("2. 5-Day Forecast")
+    print("3. Both")
+    print("4. Exit")
+
+    choice = input("Enter your choice: ").strip()
+
+    if choice == "4":
+        print("Thank you for using Weather App!")
+        break
+
+    if choice not in ("1", "2", "3"):
+        print("Invalid choice. Enter 1, 2, 3, or 4.")
+        continue
+
+    if API_KEY == "PASTE_YOUR_API_KEY_HERE":
+        print("Please add your OpenWeatherMap API key in the code.")
+        continue
+
+    city = input("Enter city name: ").strip()
+
+    if not city:
+        print("City name cannot be empty.")
+        continue
+
+    if choice == "1":
+        get_current_weather(city)
+    elif choice == "2":
+        get_forecast(city)
+    else:
+        get_current_weather(city)
+        get_forecast(city)
+
