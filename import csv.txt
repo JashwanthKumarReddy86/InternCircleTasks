@@ -1,0 +1,84 @@
+import csv
+import os
+from datetime import date
+
+FILE_NAME = "expenses.csv"
+
+
+# Create CSV file if it does not exist
+def create_file():
+    if not os.path.exists(FILE_NAME):
+        with open(FILE_NAME, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Date", "Category", "Description", "Amount"])
+
+
+# Add a new expense
+def add_expense():
+    print("\n===== ADD EXPENSE =====")
+
+    expense_date = input("Enter date (YYYY-MM-DD) or press Enter for today: ")
+    if expense_date == "":
+        expense_date = str(date.today())
+
+    try:
+        date.fromisoformat(expense_date)
+    except ValueError:
+        print("Invalid date format!")
+        return
+
+    category = input("Enter category (Food, Travel, Shopping, etc.): ")
+    description = input("Enter description: ")
+
+    try:
+        amount = float(input("Enter amount: "))
+        if amount <= 0:
+            print("Amount must be greater than zero.")
+            return
+    except ValueError:
+        print("Please enter a valid amount.")
+        return
+
+    with open(FILE_NAME, "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([expense_date, category, description, amount])
+
+    print("Expense added successfully!")
+
+
+# View all expenses
+def view_expenses():
+    print("\n===== ALL EXPENSES =====")
+
+    with open(FILE_NAME, "r", newline="") as file:
+        reader = csv.DictReader(file)
+        expenses = list(reader)
+
+    if not expenses:
+        print("No expenses recorded yet.")
+        return
+
+    for expense in expenses:
+        print(
+            f"Date: {expense['Date']} | "
+            f"Category: {expense['Category']} | "
+            f"Description: {expense['Description']} | "
+            f"Amount: Rs. {float(expense['Amount']):.2f}"
+        )
+
+
+# Filter expenses by category
+def filter_expenses():
+    print("\n===== FILTER EXPENSES =====")
+
+    category = input("Enter category to search: ").strip().lower()
+
+    with open(FILE_NAME, "r", newline="") as file:
+        reader = csv.DictReader(file)
+        found = False
+
+        for expense in reader:
+            if expense["Category"].strip().lower() == category:
+                print(
+                    f"Date: {expense['Date']} | "
+                    f"Description: {expense['Description']} | "
