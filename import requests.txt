@@ -1,0 +1,146 @@
+
+import requests
+from bs4 import BeautifulSoup
+import json
+
+# Website URLs for scraping
+HEADLINES_URL = "https://www.bbc.com/news/technology"
+QUOTES_URL = "https://quotes.toscrape.com/"
+
+# Store all scraped data
+data = {
+    "headlines": [],
+    "quotes": []
+}
+
+
+# Function to scrape tech headlines
+def scrape_headlines():
+    print("\nFetching technology headlines...")
+
+    try:
+        response = requests.get(
+            HEADLINES_URL,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15
+        )
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find headline elements
+        headlines = soup.find_all("h2")
+
+        for headline in headlines:
+            text = headline.get_text(" ", strip=True)
+
+            if text and text not in data["headlines"]:
+                data["headlines"].append(text)
+
+        if data["headlines"]:
+            print("\nTechnology Headlines:")
+            for i, headline in enumerate(data["headlines"], 1):
+                print(f"{i}. {headline}")
+        else:
+            print("No headlines found. The website layout may have changed.")
+
+    except requests.exceptions.RequestException as error:
+        print("Error fetching headlines:", error)
+
+
+# Function to scrape quotes
+def scrape_quotes():
+    print("\nFetching quotes...")
+
+    try:
+        response = requests.get(
+            QUOTES_URL,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15
+        )
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find quote containers
+        quotes = soup.find_all("div", class_="quote")
+
+        for item in quotes:
+            quote_text = item.find("span", class_="text")
+            author = item.find("small", class_="author")
+
+            if quote_text and author:
+                quote_data = {
+                    "quote": quote_text.get_text(strip=True),
+                    "author": author.get_text(strip=True)
+                }
+
+                if quote_data not in data["quotes"]:
+                    data["quotes"].append(quote_data)
+
+        if data["quotes"]:
+            print("\nQuotes:")
+            for i, item in enumerate(data["quotes"], 1):
+                print(f"{i}. {item['quote']}")
+                print("   Author:", item["author"])
+        else:
+            print("No quotes found.")
+
+    except requests.exceptions.RequestException as error:
+        print("Error fetching quotes:", error)
+
+
+# Save results to a text file
+def save_text():
+    with open("scraped_data.txt", "w", encoding="utf-8") as file:
+        file.write("TECHNOLOGY HEADLINES\n")
+        file.write("=" * 30 + "\n")
+
+        for headline in data["headlines"]:
+            file.write(headline + "\n")
+
+        file.write("\nQUOTES\n")
+        file.write("=" * 30 + "\n")
+
+        for item in data["quotes"]:
+            file.write(item["quote"] + "\n")
+            file.write("Author: " + item["author"] + "\n\n")
+
+    print("\nData saved to scraped_data.txt")
+
+
+# Save results to a JSON file
+def save_json():
+    with open("scraped_data.json", "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+
+    print("Data saved to scraped_data.json")
+
+
+# Main menu
+while True:
+    print("\n===== WEB SCRAPER =====")
+    print("1. Scrape Tech Headlines")
+    print("2. Scrape Quotes")
+    print("3. Save Data")
+    print("4. Exit")
+
+    choice = input("Enter your choice: ")
+
+    if choice == "1":
+        scrape_headlines()
+
+    elif choice == "2":
+        scrape_quotes()
+
+    elif choice == "3":
+        save_text()
+        save_json()
+
+    elif choice == "4":
+        print("Thank you for using the Web Scraper!")
+        break
+
+    else:
+        print("Invalid choice! Enter 1, 2, 3, or 4.")
+
